@@ -4,8 +4,6 @@ import numpy as onp
 
 from src.optimization.helpers.polar_to_cartesian import polar_to_cartesian
 from src.optimization.helpers.radius_from_ellipse import radius_from_ellipse
-from src.deprecated.propeller_drag import (BladeGeometry, XFoilPolar, AirfoilSection, PropellerAnalysis)
-from src.global_parameters.global_parameters import Parameters as para, Assumptions as ass
 
 N_FUSE_SECTIONS = 31
 AIRFOIL1 = "NACA2412"  # NACA 4412 is too thick for the pylon chord
@@ -16,16 +14,6 @@ TAIL_FRAC = 0.30
 
 N_MID = 6.0     # superellipse exponent at mid-fuselage (2 = ellipse, larger = boxier)
 BLEND_POW = 2.0 # how quickly the boxiness ramps up (higher = stays elliptical longer)
-
-PROP_GEOM_FILE   = ass.PROP_GEOM_FILE
-E63_POLAR_FILE   = ass.E63_POLAR_FILE
-NACA4412_FILE    = ass.NACA4412_FILE
-PROP_TRANSITION  = ass.PROP_TRANSITION
-PROP_RPM         = ass.PROP_RPM
-PROP_N_BLADES    = ass.PROP_N_BLADES
-PROP_RHO         = para.AIR_DENSITY_SEA_LEVEL
-PROP_MU          = para.DYNAMIC_VISCOSITY_SEA_LEVEL
-N_PROPELLERS     = ass.N_PROPELLERS
 
 canard_taper_ratio = 0.75  # tip chord / root chord
 
@@ -96,31 +84,31 @@ class AircraftAerodynamics:
 
         return wings
 
-def build_fuselage(self):
+    def build_fuselage(self):
 
-        beta1 = np.linspace(0, np.pi/2, N_FUSE_SECTIONS//2)
-        beta2 = np.linspace(0, np.pi/2, N_FUSE_SECTIONS//2)
-        n = 1.5
-        rho = 0.1*self.b
+            beta1 = np.linspace(0, np.pi/2, N_FUSE_SECTIONS//2)
+            beta2 = np.linspace(0, np.pi/2, N_FUSE_SECTIONS//2)
+            n = 1.5
+            rho = 0.1*self.b
 
-        return asb.Fuselage(
-            name="fuselage",
-            #the droplet-shape part of the fuselage goes from the start to the start of the canards, this is because the larger the droplet-shaped part the more aerodynamic will be the fuselagea and therefore less drag
-            #the canards are therefore the constraint and impose the maximum length of the nose
-            xsecs = [
-                asb.FuselageXSec(xyz_c=[self.canard_le * (1 - np.cos(b)), 0, 0], radius=self.b * (1 - ((self.canard_le * (1 - np.cos(b)) - self.canard_le) / self.canard_le) ** 2) ** (1 / n)
-                )
-                for b in beta1
-            ] + [
-                asb.FuselageXSec(xyz_c=[self.canard_le, 0, 0], radius=self.b)
-            ] + [
-                asb.FuselageXSec(xyz_c=[self.pylon_le_TE, 0, 0], radius=self.b)
-            ] + [
-                asb.FuselageXSec(xyz_c=[self.pylon_le_TE + ((2*self.a - self.pylon_le_TE) * np.sin(b)), 0, 0], radius=np.sqrt((self.b**2 * (2*(((self.pylon_le_TE + 2*self.a - self.pylon_le_TE) * np.sin(b))/(self.a*2))**3 - 3*(((self.pylon_le_TE + 2*self.a - self.pylon_le_TE) * np.sin(b))/(self.a*2))**2 + 1) - 2*rho*(self.a*2) * ((((self.pylon_le_TE + 2*self.a - self.pylon_le_TE) * np.sin(b))/(self.a*2))**3 - (((self.pylon_le_TE + 2*self.a - self.pylon_le_TE) * np.sin(b))/(self.a*2))**2))))
-                for b in beta2
-            ]
-        ) 
-    #Fractions of total fuselage length (2a) taken up by each cone
+            return asb.Fuselage(
+                name="fuselage",
+                #the droplet-shape part of the fuselage goes from the start to the start of the canards, this is because the larger the droplet-shaped part the more aerodynamic will be the fuselagea and therefore less drag
+                #the canards are therefore the constraint and impose the maximum length of the nose
+                xsecs = [
+                    asb.FuselageXSec(xyz_c=[self.canard_le * (1 - np.cos(b)), 0, 0], radius=self.b * (1 - ((self.canard_le * (1 - np.cos(b)) - self.canard_le) / self.canard_le) ** 2) ** (1 / n)
+                    )
+                    for b in beta1
+                ] + [
+                    asb.FuselageXSec(xyz_c=[self.canard_le, 0, 0], radius=self.b)
+                ] + [
+                    asb.FuselageXSec(xyz_c=[self.pylon_le_TE, 0, 0], radius=self.b)
+                ] + [
+                    asb.FuselageXSec(xyz_c=[self.pylon_le_TE + ((2*self.a - self.pylon_le_TE) * np.sin(b)), 0, 0], radius=np.sqrt((self.b**2 * (2*(((self.pylon_le_TE + 2*self.a - self.pylon_le_TE) * np.sin(b))/(self.a*2))**3 - 3*(((self.pylon_le_TE + 2*self.a - self.pylon_le_TE) * np.sin(b))/(self.a*2))**2 + 1) - 2*rho*(self.a*2) * ((((self.pylon_le_TE + 2*self.a - self.pylon_le_TE) * np.sin(b))/(self.a*2))**3 - (((self.pylon_le_TE + 2*self.a - self.pylon_le_TE) * np.sin(b))/(self.a*2))**2))))
+                    for b in beta2
+                ]
+            ) 
+        #Fractions of total fuselage length (2a) taken up by each cone
 
     @property
     def l_cg_geometry(self):
@@ -145,30 +133,5 @@ def build_fuselage(self):
             airplane=self.build_airplane(), op_point=op_point,
         ).run_with_stability_derivatives(alpha=True, beta=False, p=False, q=False, r=False)
         return op_point, results
-    
-    def _prop_components(self):
-        """Lazily build the velocity-independent prop data (geometry + polar)."""
-        if not hasattr(self, "_prop_geom"):
-            self._prop_geom = BladeGeometry(PROP_GEOM_FILE)
-            self._prop_section = AirfoilSection(
-                inner=XFoilPolar(E63_POLAR_FILE),
-                outer=XFoilPolar(NACA4412_FILE),
-                transition_start=PROP_TRANSITION[0],
-                transition_end=PROP_TRANSITION[1],
-            )
-        return self._prop_geom, self._prop_section
-    
-    def prop_drag(self, velocity: float, prop_aoa_deg: float ,
-                  rpm: float) -> dict:
-        geom, section = self._prop_components()
-        res = PropellerAnalysis(
-            geometry=geom,
-            airfoil=section,
-            velocity=velocity,
-            rpm=rpm,
-            rho=PROP_RHO,
-            mu=PROP_MU,
-            n_blades=PROP_N_BLADES,
-            aoa_deg=prop_aoa_deg,
-        ).run()
-        return res.D_axial * N_PROPELLERS
+
+    #def prop_drag(self, )
